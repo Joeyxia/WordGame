@@ -42,7 +42,7 @@ export default function SelectChildPage() {
                     onClick={() => chooseChild(child.id)}
                     className="mc-btn w-full text-left"
                   >
-                    {child.name} · {child.ageTrack === "AGE_10" ? "10岁词包" : "13岁词包"}
+                    {child.name} · {child.ageTrack === "AGE_10" ? "Age 10 Pack" : "Age 13 Pack"}
                   </button>
                 </li>
               ))}

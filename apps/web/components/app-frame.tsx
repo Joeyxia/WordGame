@@ -28,7 +28,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   }, [pathname, router]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 px-4 py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1700px] flex-col gap-5 px-5 py-7">
       {authenticated ? (
         <header className="pixel-card mc-header p-4">
           <h1 className="text-2xl font-bold">WordQuest Kids v2.1</h1>
@@ -42,4 +42,3 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
     </main>
   );
 }
-

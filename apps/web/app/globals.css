@@ -154,6 +154,7 @@ select {
 
 .mc-hero {
   overflow: hidden;
+  min-height: 520px;
   border-color: #2f5f24;
   background:
     linear-gradient(180deg, #83cfff 0%, #5ea2d4 48%, #4b8bc0 100%);
@@ -188,8 +189,8 @@ select {
 
 .mc-clouds {
   position: absolute;
-  inset: 10px 0 auto 0;
-  height: 54px;
+  inset: 14px 0 auto 0;
+  height: 88px;
   pointer-events: none;
   z-index: 0;
 }
@@ -257,54 +258,69 @@ select {
 }
 
 .mc-signin-panel {
-  width: min(100%, 360px);
+  width: min(100%, 420px);
   border-color: #565656;
   background: linear-gradient(180deg, #f0f1f4 0%, #d8dbe1 100%);
 }
 
 .mc-gsi-wrap {
-  border: 2px dashed #7b7f88;
-  border-radius: 6px;
-  background: #fff;
-  padding: 10px;
+  border: 3px solid #6b717d;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d9dde6 0%, #c4cad7 100%);
+  box-shadow:
+    0 3px 0 #6b717d,
+    inset 0 0 0 2px rgba(255, 255, 255, 0.28);
+  padding: 14px 12px;
   display: grid;
   place-items: center;
 }
 
-.mc-status-chip {
+.mc-status-box {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 2px solid #666;
-  border-radius: 999px;
-  padding: 5px 10px;
-  background: #ececec;
-  font-size: 12px;
-  color: #2d2d2d;
+  width: 100%;
+  border: 3px solid #6f7683;
+  border-radius: 2px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #eff2f8 0%, #dfe4ef 100%);
+  box-shadow:
+    0 3px 0 #6f7683,
+    inset 0 0 0 2px rgba(255, 255, 255, 0.24);
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f232b;
 }
 
-.mc-status-chip .dot {
+.mc-status-box .dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 1px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
   background: #777;
 }
 
-.mc-status-chip.ready .dot {
+.mc-status-box.ready .dot {
   background: #2d8a38;
 }
 
-.mc-status-chip.verifying .dot,
-.mc-status-chip.booting .dot {
+.mc-status-box.verifying .dot,
+.mc-status-box.booting .dot {
   background: #d2912a;
 }
 
-.mc-status-chip.error .dot {
+.mc-status-box.error .dot {
   background: #b43a3a;
 }
 
-.mc-status-chip.done .dot {
+.mc-status-box.done .dot {
   background: #297c31;
+}
+
+@media (max-width: 900px) {
+  .mc-hero {
+    min-height: 640px;
+  }
 }
 
 .mc-soft {

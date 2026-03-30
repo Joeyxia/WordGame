@@ -21,7 +21,7 @@ declare global {
 }
 
 export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: string }) {
-  const [status, setStatus] = useState("正在加载 Gmail 登录...");
+  const [status, setStatus] = useState("Loading Gmail sign-in...");
   const [phase, setPhase] = useState<"booting" | "ready" | "verifying" | "done" | "error">("booting");
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
@@ -34,21 +34,21 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
     });
 
     if (!response.ok) {
-      setStatus(`登录失败（${response.status}），请稍后重试。`);
+      setStatus(`Sign-in failed (${response.status}). Please try again.`);
       setPhase("error");
       return;
     }
 
     const data = (await response.json()) as { accessToken: string; user: { role: string; email: string } };
     setToken(data.accessToken);
-    setStatus(`登录成功：${data.user.email}`);
+    setStatus(`Signed in as ${data.user.email}`);
     setPhase("done");
     router.push(redirectTo);
   }
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
-      setStatus("缺少 NEXT_PUBLIC_GOOGLE_CLIENT_ID 配置。");
+      setStatus("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID.");
       setPhase("error");
       return;
     }
@@ -57,7 +57,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
     const script = existing || document.createElement("script");
 
     if (!existing) {
-      script.setAttribute("src", "https://accounts.google.com/gsi/client");
+      script.setAttribute("src", "https://accounts.google.com/gsi/client?hl=en");
       script.setAttribute("async", "true");
       script.setAttribute("defer", "true");
       document.head.appendChild(script);
@@ -65,7 +65,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
 
     const bootstrap = () => {
       if (!window.google?.accounts?.id || !buttonRef.current) {
-        setStatus("Google 登录组件加载失败。");
+        setStatus("Failed to load Google sign-in component.");
         setPhase("error");
         return;
       }
@@ -74,7 +74,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: (googleResponse) => {
-          setStatus("正在验证账号...");
+          setStatus("Verifying account...");
           setPhase("verifying");
           void exchangeToken(googleResponse.credential);
         }
@@ -87,10 +87,11 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
         shape: "rectangular",
         text: "continue_with",
         logo_alignment: "left",
-        width: 300
+        width: 300,
+        locale: "en"
       });
 
-      setStatus("请使用 Gmail 账号登录。");
+      setStatus("Use your Gmail account to sign in.");
       setPhase("ready");
     };
 
@@ -103,8 +104,8 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
 
   return (
     <div className="mc-signin-panel mc-list-card flex max-w-md flex-col gap-3 p-4">
-      <p className="text-base font-bold">家长入口</p>
-      <p className="mc-soft text-sm">使用家长 Gmail 登录后进入世界，并解锁孩子学习菜单。</p>
+      <p className="text-base font-bold">Parent Access</p>
+      <p className="mc-soft text-sm">Sign in with a parent Gmail account to enter the world and unlock child menus.</p>
       {phase === "booting" || phase === "verifying" ? (
         <>
           <div className="mc-loader" aria-hidden>
@@ -121,7 +122,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
       <div className="mc-gsi-wrap">
         <div ref={buttonRef} className="min-h-10" />
       </div>
-      <div className={`mc-status-chip ${phase}`}>
+      <div className={`mc-status-box ${phase}`}>
         <span className="dot" />
         <span>{status}</span>
       </div>

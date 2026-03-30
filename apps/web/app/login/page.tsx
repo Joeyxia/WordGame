@@ -3,7 +3,7 @@ import { PageShell } from "../../components/page-shell";
 
 export default function LoginPage() {
   return (
-    <PageShell title="Gmail Login" subtitle="请使用 Gmail 登录，登录后自动进入主菜单。">
+    <PageShell title="Gmail Login" subtitle="Sign in with Gmail to access the main menu.">
       <GmailSignIn redirectTo="/child/home" />
     </PageShell>
   );
