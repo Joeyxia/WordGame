@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "../../../lib/api";
 import { getSelectedChild } from "../../../lib/session";
 import { PageShell } from "../../../components/page-shell";
@@ -29,18 +30,20 @@ type TaskPayload = {
 export default function ChildLearnPage() {
   const [task, setTask] = useState<TaskPayload | null>(null);
   const [error, setError] = useState("");
+  const router = useRouter();
   const childId = getSelectedChild();
 
   useEffect(() => {
     if (!childId) {
-      setError("No child selected. Go to /select-child first.");
+      setError("No child selected. Redirecting to Select Child...");
+      router.replace("/select-child");
       return;
     }
 
     apiPost<TaskPayload>(`/learning/task/${childId}/generate`, {})
       .then(setTask)
       .catch((err: unknown) => setError((err as Error).message));
-  }, [childId]);
+  }, [childId, router]);
 
   const grouped = useMemo(() => {
     if (!task) return [] as TaskItem[][];

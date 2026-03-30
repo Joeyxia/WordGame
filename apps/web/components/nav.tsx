@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 const links = [
+  ["Select Child", "/select-child"],
   ["Child Home", "/child/home"],
   ["World", "/child/world"],
   ["Learn", "/child/learn"],
