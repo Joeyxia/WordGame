@@ -1,0 +1,32 @@
+[
+  {
+    "word": "analyze",
+    "phonetic": "/ˈæn.əl.aɪz/",
+    "meaning_zh": "分析",
+    "meaning_en": "to examine carefully",
+    "part_of_speech": "verb",
+    "example_sentence": "We analyze data in science class.",
+    "example_sentence_zh": "我们在科学课上分析数据。",
+    "image_url": "https://images.pexels.com/photos/256417/pexels-photo-256417.jpeg",
+    "audio_url": "https://cdn.wordquest.games/audio/age13/analyze.mp3",
+    "difficulty_level": 2,
+    "theme_category": "science",
+    "age_min": 12,
+    "age_max": 14
+  },
+  {
+    "word": "context",
+    "phonetic": "/ˈkɒn.tekst/",
+    "meaning_zh": "语境",
+    "meaning_en": "the situation around a word or event",
+    "part_of_speech": "noun",
+    "example_sentence": "Meaning changes with context.",
+    "example_sentence_zh": "意思会随着语境而变化。",
+    "image_url": "https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg",
+    "audio_url": "https://cdn.wordquest.games/audio/age13/context.mp3",
+    "difficulty_level": 2,
+    "theme_category": "language",
+    "age_min": 12,
+    "age_max": 14
+  }
+]

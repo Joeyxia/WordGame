@@ -1,0 +1,17 @@
+{
+  "name": "@wordquest/content-tools",
+  "version": "2.1.0",
+  "private": true,
+  "scripts": {
+    "import": "ts-node src/import-wordpacks.ts"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "@prisma/client": "^5.20.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}

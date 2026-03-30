@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+  color: #1d2433;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(110, 200, 255, 0.38), transparent 35%),
+    radial-gradient(circle at 85% 25%, rgba(108, 180, 111, 0.25), transparent 32%),
+    linear-gradient(180deg, #fbfdff 0%, #e9f1ff 100%);
+}
+
+.pixel-card {
+  border: 3px solid rgba(29, 36, 51, 0.15);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 35px rgba(41, 69, 124, 0.12);
+}
+
+.world-tile {
+  position: relative;
+  min-height: 110px;
+  border-radius: 8px;
+  border: 2px solid rgba(62, 79, 129, 0.18);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(108, 180, 111, 0.25),
+    rgba(108, 180, 111, 0.25) 8px,
+    rgba(96, 168, 101, 0.3) 8px,
+    rgba(96, 168, 101, 0.3) 16px
+  );
+}

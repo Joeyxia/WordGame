@@ -1,0 +1,32 @@
+[
+  {
+    "word": "apple",
+    "phonetic": "/ˈæp.əl/",
+    "meaning_zh": "苹果",
+    "meaning_en": "a round fruit",
+    "part_of_speech": "noun",
+    "example_sentence": "I eat an apple after school.",
+    "example_sentence_zh": "我放学后吃一个苹果。",
+    "image_url": "https://images.pexels.com/photos/102104/pexels-photo-102104.jpeg",
+    "audio_url": "https://cdn.wordquest.games/audio/age10/apple.mp3",
+    "difficulty_level": 1,
+    "theme_category": "food",
+    "age_min": 9,
+    "age_max": 11
+  },
+  {
+    "word": "river",
+    "phonetic": "/ˈrɪv.ər/",
+    "meaning_zh": "河流",
+    "meaning_en": "a large stream of water",
+    "part_of_speech": "noun",
+    "example_sentence": "The river is near our town.",
+    "example_sentence_zh": "那条河在我们镇附近。",
+    "image_url": "https://images.pexels.com/photos/36717/amazing-animal-beautiful-beautifull.jpg",
+    "audio_url": "https://cdn.wordquest.games/audio/age10/river.mp3",
+    "difficulty_level": 1,
+    "theme_category": "nature",
+    "age_min": 9,
+    "age_max": 11
+  }
+]

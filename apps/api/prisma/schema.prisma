@@ -1,0 +1,305 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARENT
+  CHILD
+  ADMIN
+}
+
+enum AgeTrack {
+  AGE_10
+  AGE_13
+}
+
+enum LearningState {
+  NEW
+  LEARNING
+  REVIEWING
+  WEAK
+  MASTERED
+}
+
+enum PackStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  displayName    String?
+  avatarUrl      String?
+  role           Role            @default(PARENT)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  households     Household[]     @relation("ParentHouseholds")
+  childProfiles  ChildProfile[]  @relation("ChildLinkedUser")
+  adminAuditLogs AdminAuditLog[]
+  userAchievements UserAchievement[]
+  gameSessions   GameSession[]
+}
+
+model Household {
+  id            String         @id @default(cuid())
+  name          String
+  parentId      String
+  parent        User           @relation("ParentHouseholds", fields: [parentId], references: [id])
+  childProfiles ChildProfile[]
+  settings      ParentSetting?
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model ChildProfile {
+  id                 String           @id @default(cuid())
+  householdId        String
+  household          Household        @relation(fields: [householdId], references: [id])
+  linkedUserId       String?
+  linkedUser         User?            @relation("ChildLinkedUser", fields: [linkedUserId], references: [id])
+  name               String
+  ageTrack           AgeTrack
+  grade              String?
+  packLevel          String?
+  isActive           Boolean          @default(true)
+  dailyTasks         DailyTask[]
+  learningRecords    LearningRecord[]
+  worldProgress      WorldProgress?
+  buildInventory     BuildInventory?
+  structures         Structure[]
+  rewards            Reward[]
+  achievements       UserAchievement[]
+  gameSessions       GameSession[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model ParentSetting {
+  id                     String    @id @default(cuid())
+  householdId            String    @unique
+  household              Household @relation(fields: [householdId], references: [id])
+  defaultDailyNewWords10 Int       @default(20)
+  defaultDailyNewWords13 Int       @default(20)
+  dailyWindowStart       String    @default("18:00")
+  dailyWindowEnd         String    @default("21:00")
+  dailyMaxMinutes        Int       @default(45)
+  weekendReviewBoost     Boolean   @default(true)
+  enableSpelling         Boolean   @default(true)
+  enableListening        Boolean   @default(true)
+  enableChallenge        Boolean   @default(true)
+  reviewPriorityStrict   Boolean   @default(true)
+  updatedAt              DateTime  @updatedAt
+}
+
+model WordPack {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  name        String
+  ageTrack    AgeTrack
+  version     String
+  status      PackStatus
+  items       WordPackItem[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Word {
+  id                String           @id @default(cuid())
+  word              String
+  ageTrack          AgeTrack
+  phonetic          String
+  meaningZh         String
+  meaningEn         String
+  partOfSpeech      String
+  exampleSentence   String
+  exampleSentenceZh String
+  imageUrl          String
+  audioUrl          String
+  difficultyLevel   Int
+  themeCategory     String
+  learningRecords   LearningRecord[]
+  packItems         WordPackItem[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([word, ageTrack])
+  @@index([ageTrack, themeCategory])
+}
+
+model WordPackItem {
+  id         String   @id @default(cuid())
+  wordPackId String
+  wordId     String
+  wordPack   WordPack @relation(fields: [wordPackId], references: [id])
+  word       Word     @relation(fields: [wordId], references: [id])
+
+  @@unique([wordPackId, wordId])
+}
+
+model DailyTask {
+  id                    String      @id @default(cuid())
+  childProfileId        String
+  childProfile          ChildProfile @relation(fields: [childProfileId], references: [id])
+  taskDate              DateTime
+  plannedNewWords       Int         @default(20)
+  plannedMinutes        Int         @default(30)
+  carryOverReviewCount  Int         @default(0)
+  configSnapshot        Json
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  taskItems             TaskItem[]
+
+  @@unique([childProfileId, taskDate])
+  @@index([taskDate])
+}
+
+model TaskItem {
+  id               String       @id @default(cuid())
+  dailyTaskId      String
+  dailyTask        DailyTask    @relation(fields: [dailyTaskId], references: [id])
+  wordId           String
+  word             Word         @relation(fields: [wordId], references: [id])
+  isReview         Boolean      @default(false)
+  groupIndex       Int          @default(0)
+  orderInGroup     Int          @default(0)
+  completed        Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+
+  @@index([dailyTaskId, groupIndex])
+}
+
+model LearningRecord {
+  id               String        @id @default(cuid())
+  childProfileId   String
+  childProfile     ChildProfile  @relation(fields: [childProfileId], references: [id])
+  wordId           String
+  word             Word          @relation(fields: [wordId], references: [id])
+  ageTrack         AgeTrack
+  contentVersion   String
+  sourcePackId     String
+  state            LearningState @default(NEW)
+  srsStage         Int           @default(0)
+  wrongCount       Int           @default(0)
+  lastReviewedAt   DateTime?
+  nextReviewAt     DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([childProfileId, wordId])
+  @@index([childProfileId, state, nextReviewAt])
+}
+
+model WorldProgress {
+  id               String       @id @default(cuid())
+  childProfileId   String       @unique
+  childProfile     ChildProfile @relation(fields: [childProfileId], references: [id])
+  mapZone          String       @default("starter-village")
+  level            Int          @default(1)
+  xp               Int          @default(0)
+  coins            Int          @default(0)
+  unlockedZones    Json
+  updatedAt        DateTime     @updatedAt
+}
+
+model BuildInventory {
+  id               String       @id @default(cuid())
+  childProfileId   String       @unique
+  childProfile     ChildProfile @relation(fields: [childProfileId], references: [id])
+  wood             Int          @default(0)
+  stone            Int          @default(0)
+  ore              Int          @default(0)
+  seeds            Int          @default(0)
+  updatedAt        DateTime     @updatedAt
+}
+
+model Structure {
+  id               String      @id @default(cuid())
+  childProfileId   String
+  childProfile     ChildProfile @relation(fields: [childProfileId], references: [id])
+  name             String
+  level            Int         @default(1)
+  status           String      @default("building")
+  updatedAt        DateTime    @updatedAt
+}
+
+model GameSession {
+  id             String      @id @default(cuid())
+  childProfileId String
+  childProfile   ChildProfile @relation(fields: [childProfileId], references: [id])
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id])
+  sessionType    String      @default("explore")
+  startedAt      DateTime    @default(now())
+  endedAt        DateTime?
+  metadata       Json?
+}
+
+model Reward {
+  id             String      @id @default(cuid())
+  childProfileId String
+  childProfile   ChildProfile @relation(fields: [childProfileId], references: [id])
+  kind           String
+  amount         Int         @default(0)
+  createdAt      DateTime    @default(now())
+}
+
+model Achievement {
+  id             String           @id @default(cuid())
+  code           String           @unique
+  name           String
+  description    String
+  xpBonus        Int              @default(0)
+  userLinks      UserAchievement[]
+}
+
+model UserAchievement {
+  id             String       @id @default(cuid())
+  achievementId  String
+  achievement    Achievement  @relation(fields: [achievementId], references: [id])
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id])
+  childProfileId String?
+  childProfile   ChildProfile? @relation(fields: [childProfileId], references: [id])
+  unlockedAt     DateTime     @default(now())
+
+  @@index([userId, childProfileId])
+}
+
+model Asset {
+  id               String      @id @default(cuid())
+  type             String
+  source           String
+  cdnUrl           String
+  license          String
+  status           String      @default("ACTIVE")
+  createdAt        DateTime    @default(now())
+}
+
+model Notification {
+  id               String      @id @default(cuid())
+  householdId      String
+  household        Household   @relation(fields: [householdId], references: [id])
+  kind             String
+  payload          Json
+  read             Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+}
+
+model AdminAuditLog {
+  id               String      @id @default(cuid())
+  actorId          String
+  actor            User        @relation(fields: [actorId], references: [id])
+  action           String
+  targetType       String
+  targetId         String
+  metadata         Json
+  createdAt        DateTime    @default(now())
+}

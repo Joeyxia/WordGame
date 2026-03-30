@@ -1,0 +1,18 @@
+{
+  "name": "wordquest-kids",
+  "version": "2.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @wordquest/web run dev",
+    "dev:api": "npm --workspace @wordquest/api run dev",
+    "dev": "echo \"Run dev:web and dev:api in two terminals\"",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "seed": "npm --workspace @wordquest/api run seed",
+    "content:import": "npm --workspace @wordquest/content-tools run import"
+  }
+}
