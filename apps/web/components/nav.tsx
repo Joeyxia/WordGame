@@ -14,9 +14,9 @@ const links = [
 
 export function AppNav() {
   return (
-    <nav className="flex flex-wrap gap-2 rounded-xl border border-white/30 bg-white/50 p-3 backdrop-blur">
+    <nav className="mc-nav flex flex-wrap gap-2 p-3">
       {links.map(([label, href]) => (
-        <Link key={href} href={href} className="rounded-md bg-dusk px-3 py-1 text-sm text-white">
+        <Link key={href} href={href} className="mc-link text-sm">
           {label}
         </Link>
       ))}

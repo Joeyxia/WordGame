@@ -21,7 +21,7 @@ export default function AdminUsersPage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
         {users.map((user) => (
-          <article key={user.id} className="rounded border border-slate-200 p-3 text-sm">
+          <article key={user.id} className="mc-list-card p-3 text-sm">
             {user.email} · role: {user.role} · households: {user.households.length}
           </article>
         ))}

@@ -21,7 +21,7 @@ export default function AdminWordPacksPage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
         {packs.map((pack) => (
-          <article key={pack.id} className="rounded border border-slate-200 p-3 text-sm">
+          <article key={pack.id} className="mc-list-card p-3 text-sm">
             {pack.name} · {pack.version} · {pack.ageTrack} · {pack.status} · items: {pack.items.length}
           </article>
         ))}

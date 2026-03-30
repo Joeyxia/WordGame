@@ -24,11 +24,11 @@ export default function ParentDashboardPage() {
       {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
         {data?.summary.map((item) => (
-          <article key={item.householdId} className="rounded-md border border-slate-200 p-3">
+          <article key={item.householdId} className="mc-list-card p-3">
             <p>Household: {item.householdId}</p>
             <p>Children: {item.childCount}</p>
             <p>Weak words: {item.weakWords}</p>
-            <Link href={`/parent/child/${item.householdId}`} className="mt-2 inline-block rounded bg-dusk px-3 py-1 text-white">
+            <Link href={`/parent/child/${item.householdId}`} className="mc-btn mt-2 inline-block">
               View Child Detail
             </Link>
           </article>

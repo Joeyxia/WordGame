@@ -21,7 +21,7 @@ export default function AdminReviewQueuePage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
         {logs.map((log) => (
-          <article key={log.id} className="rounded border border-slate-200 p-3 text-sm">
+          <article key={log.id} className="mc-list-card p-3 text-sm">
             {log.action} · {log.targetType}:{log.targetId} · {new Date(log.createdAt).toLocaleString()}
           </article>
         ))}

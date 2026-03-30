@@ -42,18 +42,18 @@ export default function LoginPage() {
       subtitle="Production mode uses Google OAuth. This page exchanges Google ID token with API and stores JWT session."
     >
       <form className="flex flex-col gap-3" onSubmit={onSubmit}>
-        <label className="text-sm font-medium text-slate-700">Google ID Token</label>
+        <label className="mc-soft text-sm font-medium">Google ID Token</label>
         <textarea
-          className="h-40 rounded-md border border-slate-300 p-2 text-sm"
+          className="h-40 p-2 text-sm"
           value={idToken}
           onChange={(event) => setIdToken(event.target.value)}
           placeholder="Paste Google ID token here"
         />
-        <button className="w-fit rounded-md bg-dusk px-4 py-2 text-white" type="submit">
+        <button className="mc-btn w-fit" type="submit">
           Exchange and Login
         </button>
       </form>
-      <p className="mt-3 text-sm text-slate-600">{status}</p>
+      <p className="mc-soft mt-3 text-sm">{status}</p>
     </PageShell>
   );
 }

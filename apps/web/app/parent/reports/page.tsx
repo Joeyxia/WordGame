@@ -28,7 +28,7 @@ export default function ParentReportsPage() {
       {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
       <div className="grid gap-3">
         {reports.map((item) => (
-          <article key={item.childProfileId} className="rounded-md border border-slate-200 p-3">
+          <article key={item.childProfileId} className="mc-list-card p-3">
             <p className="font-semibold">{item.childName}</p>
             <p className="text-sm">Mastered: {item.mastered}</p>
             <p className="text-sm">Weak: {item.weak}</p>

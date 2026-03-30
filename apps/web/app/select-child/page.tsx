@@ -33,14 +33,14 @@ export default function SelectChildPage() {
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-2">
         {households.map((household) => (
-          <article key={household.id} className="rounded-lg border border-slate-200 p-4">
+          <article key={household.id} className="mc-list-card p-4">
             <h3 className="font-semibold">{household.name}</h3>
             <ul className="mt-2 flex flex-col gap-2">
               {household.childProfiles.map((child) => (
                 <li key={child.id}>
                   <button
                     onClick={() => chooseChild(child.id)}
-                    className="w-full rounded-md bg-leaf px-3 py-2 text-left text-white"
+                    className="mc-btn w-full text-left"
                   >
                     {child.name} · {child.ageTrack === "AGE_10" ? "10岁词包" : "13岁词包"}
                   </button>

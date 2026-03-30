@@ -21,7 +21,7 @@ export default function AdminAssetsPage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
         {assets.map((asset) => (
-          <article key={asset.id} className="rounded border border-slate-200 p-3 text-sm">
+          <article key={asset.id} className="mc-list-card p-3 text-sm">
             {asset.type} · {asset.source} · {asset.license}
           </article>
         ))}

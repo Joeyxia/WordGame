@@ -65,22 +65,22 @@ export default function ChildLearnPage() {
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
       <div className="flex flex-col gap-4">
         {grouped.map((group, idx) => (
-          <article key={idx} className="rounded-lg border border-slate-200 p-4">
+          <article key={idx} className="mc-list-card p-4">
             <h3 className="font-semibold">Group {idx + 1}</h3>
             <ul className="mt-2 space-y-2">
               {group.map((item) => (
-                <li key={item.id} className="rounded-md border border-slate-100 p-3">
+                <li key={item.id} className="mc-list-card p-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-dusk">{item.word.word}</p>
-                      <p className="text-xs text-slate-500">{item.word.phonetic}</p>
+                      <p className="font-semibold">{item.word.word}</p>
+                      <p className="mc-soft text-xs">{item.word.phonetic}</p>
                       <p className="text-sm">{item.word.meaningZh}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button className="rounded bg-leaf px-2 py-1 text-white" onClick={() => mark(item, true)}>
+                      <button className="mc-btn" onClick={() => mark(item, true)}>
                         Correct
                       </button>
-                      <button className="rounded bg-rose-500 px-2 py-1 text-white" onClick={() => mark(item, false)}>
+                      <button className="mc-btn" onClick={() => mark(item, false)}>
                         Wrong
                       </button>
                     </div>
