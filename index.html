@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WordGame</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>WordGame</h1>
+      <p class="subtitle">Guess the hidden 5-letter word in 6 tries.</p>
+
+      <form id="guess-form" class="guess-form" autocomplete="off">
+        <input id="guess-input" maxlength="5" minlength="5" placeholder="Enter 5 letters" />
+        <button type="submit">Try</button>
+      </form>
+
+      <p id="message" class="message"></p>
+      <ul id="history" class="history"></ul>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
