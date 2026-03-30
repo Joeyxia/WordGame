@@ -1,24 +1,33 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "../../components/page-shell";
 import { setToken } from "../../lib/session";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api";
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (input: { client_id: string; callback: (response: { credential: string }) => void }) => void;
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
 
 export default function LoginPage() {
-  const [idToken, setIdToken] = useState("");
-  const [status, setStatus] = useState("Use Google ID token to exchange session.");
+  const [status, setStatus] = useState("正在加载 Gmail 登录...");
   const router = useRouter();
+  const buttonRef = useRef<HTMLDivElement | null>(null);
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!idToken.trim()) {
-      setStatus("Please paste an ID token.");
-      return;
-    }
-
+  async function exchangeToken(idToken: string) {
     const response = await fetch(`${API_BASE_URL}/auth/google/exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -26,33 +35,73 @@ export default function LoginPage() {
     });
 
     if (!response.ok) {
-      setStatus(`Login failed (${response.status}). Check token and backend env.`);
+      setStatus(`登录失败（${response.status}），请稍后重试。`);
       return;
     }
 
     const data = (await response.json()) as { accessToken: string; user: { role: string; email: string } };
     setToken(data.accessToken);
-    setStatus(`Logged in as ${data.user.email} (${data.user.role})`);
+    setStatus(`登录成功：${data.user.email}（${data.user.role}）`);
     router.push("/select-child");
   }
 
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      setStatus("缺少 NEXT_PUBLIC_GOOGLE_CLIENT_ID 配置。");
+      return;
+    }
+
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    const script = existing || document.createElement("script");
+
+    if (!existing) {
+      script.setAttribute("src", "https://accounts.google.com/gsi/client");
+      script.setAttribute("async", "true");
+      script.setAttribute("defer", "true");
+      document.head.appendChild(script);
+    }
+
+    const bootstrap = () => {
+      if (!window.google?.accounts?.id || !buttonRef.current) {
+        setStatus("Google 登录组件加载失败。");
+        return;
+      }
+
+      buttonRef.current.innerHTML = "";
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (googleResponse) => {
+          setStatus("正在验证账号...");
+          void exchangeToken(googleResponse.credential);
+        }
+      });
+
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: "filled_blue",
+        size: "large",
+        type: "standard",
+        shape: "rectangular",
+        text: "signin_with",
+        logo_alignment: "left",
+        width: 320
+      });
+
+      setStatus("请使用 Gmail 账号登录。");
+    };
+
+    if (existing) {
+      bootstrap();
+    } else {
+      script.addEventListener("load", bootstrap, { once: true });
+    }
+  }, []);
+
   return (
-    <PageShell
-      title="Parent Login"
-      subtitle="Production mode uses Google OAuth. This page exchanges Google ID token with API and stores JWT session."
-    >
-      <form className="flex flex-col gap-3" onSubmit={onSubmit}>
-        <label className="mc-soft text-sm font-medium">Google ID Token</label>
-        <textarea
-          className="h-40 p-2 text-sm"
-          value={idToken}
-          onChange={(event) => setIdToken(event.target.value)}
-          placeholder="Paste Google ID token here"
-        />
-        <button className="mc-btn w-fit" type="submit">
-          Exchange and Login
-        </button>
-      </form>
+    <PageShell title="Parent Login" subtitle="使用 Gmail 登录后，系统会自动换取会话并进入孩子选择页。">
+      <div className="mc-list-card flex max-w-md flex-col gap-3 p-4">
+        <p className="mc-soft text-sm">推荐使用家长 Gmail 账号登录。</p>
+        <div ref={buttonRef} className="min-h-10" />
+      </div>
       <p className="mc-soft mt-3 text-sm">{status}</p>
     </PageShell>
   );
