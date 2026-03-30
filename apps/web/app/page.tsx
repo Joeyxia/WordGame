@@ -8,7 +8,7 @@ export default function HomePage() {
           <span className="mc-cloud one" />
           <span className="mc-cloud two" />
         </div>
-        <div className="relative z-[2] grid gap-5 md:grid-cols-[1.4fr_1fr]">
+        <div className="relative z-[2] grid gap-5 pt-24 md:grid-cols-[1.4fr_1fr] md:pt-32">
           <div>
             <p className="mc-hero-kicker">BLOCK EDUCATION RPG</p>
             <h2 className="text-3xl font-extrabold text-white md:text-4xl">WordQuest Block World</h2>
