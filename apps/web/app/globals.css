@@ -236,11 +236,75 @@ select {
   animation: cloudDrift 22s linear infinite;
 }
 
+.mc-hero-kicker {
+  display: inline-block;
+  border: 2px solid #1e3550;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background: rgba(17, 43, 73, 0.55);
+  color: #d9ecff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
 .mc-list-card {
   border: 3px solid #6a6a6a;
   border-radius: 4px;
   background: linear-gradient(180deg, #ececec 0%, #cbcbcb 100%);
   box-shadow: 0 4px 0 #666;
+}
+
+.mc-signin-panel {
+  width: min(100%, 360px);
+  border-color: #565656;
+  background: linear-gradient(180deg, #f0f1f4 0%, #d8dbe1 100%);
+}
+
+.mc-gsi-wrap {
+  border: 2px dashed #7b7f88;
+  border-radius: 6px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.mc-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #666;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #ececec;
+  font-size: 12px;
+  color: #2d2d2d;
+}
+
+.mc-status-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #777;
+}
+
+.mc-status-chip.ready .dot {
+  background: #2d8a38;
+}
+
+.mc-status-chip.verifying .dot,
+.mc-status-chip.booting .dot {
+  background: #d2912a;
+}
+
+.mc-status-chip.error .dot {
+  background: #b43a3a;
+}
+
+.mc-status-chip.done .dot {
+  background: #297c31;
 }
 
 .mc-soft {
@@ -392,5 +456,9 @@ select {
   .mc-btn,
   a.mc-btn {
     padding: 8px 12px;
+  }
+
+  .mc-signin-panel {
+    width: 100%;
   }
 }

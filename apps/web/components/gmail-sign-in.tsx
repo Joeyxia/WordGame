@@ -81,13 +81,13 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
       });
 
       window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: "filled_blue",
+        theme: "outline",
         size: "large",
-        type: "standard",
+        type: "continue_with",
         shape: "rectangular",
-        text: "signin_with",
+        text: "continue_with",
         logo_alignment: "left",
-        width: 320
+        width: 300
       });
 
       setStatus("请使用 Gmail 账号登录。");
@@ -102,8 +102,9 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
   }, []);
 
   return (
-    <div className="mc-list-card flex max-w-md flex-col gap-3 p-4">
-      <p className="mc-soft text-sm">使用家长 Gmail 账号登录后进入游戏世界。</p>
+    <div className="mc-signin-panel mc-list-card flex max-w-md flex-col gap-3 p-4">
+      <p className="text-base font-bold">家长入口</p>
+      <p className="mc-soft text-sm">使用家长 Gmail 登录后进入世界，并解锁孩子学习菜单。</p>
       {phase === "booting" || phase === "verifying" ? (
         <>
           <div className="mc-loader" aria-hidden>
@@ -117,8 +118,13 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
           </div>
         </>
       ) : null}
-      <div ref={buttonRef} className="min-h-10" />
-      <p className="mc-soft text-sm">{status}</p>
+      <div className="mc-gsi-wrap">
+        <div ref={buttonRef} className="min-h-10" />
+      </div>
+      <div className={`mc-status-chip ${phase}`}>
+        <span className="dot" />
+        <span>{status}</span>
+      </div>
     </div>
   );
 }
