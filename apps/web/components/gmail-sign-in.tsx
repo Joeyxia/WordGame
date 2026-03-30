@@ -22,6 +22,7 @@ declare global {
 
 export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: string }) {
   const [status, setStatus] = useState("正在加载 Gmail 登录...");
+  const [phase, setPhase] = useState<"booting" | "ready" | "verifying" | "done" | "error">("booting");
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
@@ -34,18 +35,21 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
 
     if (!response.ok) {
       setStatus(`登录失败（${response.status}），请稍后重试。`);
+      setPhase("error");
       return;
     }
 
     const data = (await response.json()) as { accessToken: string; user: { role: string; email: string } };
     setToken(data.accessToken);
     setStatus(`登录成功：${data.user.email}`);
+    setPhase("done");
     router.push(redirectTo);
   }
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
       setStatus("缺少 NEXT_PUBLIC_GOOGLE_CLIENT_ID 配置。");
+      setPhase("error");
       return;
     }
 
@@ -62,6 +66,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
     const bootstrap = () => {
       if (!window.google?.accounts?.id || !buttonRef.current) {
         setStatus("Google 登录组件加载失败。");
+        setPhase("error");
         return;
       }
 
@@ -70,6 +75,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
         client_id: GOOGLE_CLIENT_ID,
         callback: (googleResponse) => {
           setStatus("正在验证账号...");
+          setPhase("verifying");
           void exchangeToken(googleResponse.credential);
         }
       });
@@ -85,6 +91,7 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
       });
 
       setStatus("请使用 Gmail 账号登录。");
+      setPhase("ready");
     };
 
     if (existing) {
@@ -97,9 +104,21 @@ export function GmailSignIn({ redirectTo = "/child/home" }: { redirectTo?: strin
   return (
     <div className="mc-list-card flex max-w-md flex-col gap-3 p-4">
       <p className="mc-soft text-sm">使用家长 Gmail 账号登录后进入游戏世界。</p>
+      {phase === "booting" || phase === "verifying" ? (
+        <>
+          <div className="mc-loader" aria-hidden>
+            <span className="mc-loader-block" />
+            <span className="mc-loader-block" />
+            <span className="mc-loader-block" />
+            <span className="mc-loader-block" />
+          </div>
+          <div className="mc-progress" aria-hidden>
+            <span />
+          </div>
+        </>
+      ) : null}
       <div ref={buttonRef} className="min-h-10" />
       <p className="mc-soft text-sm">{status}</p>
     </div>
   );
 }
-
