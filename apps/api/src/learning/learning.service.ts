@@ -8,6 +8,18 @@ import { SubmitWordResultDto } from "./dto-submit-word-result";
 export class LearningService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async getRewardConfig() {
+    const latestConfig = await this.prisma.adminAuditLog.findFirst({
+      where: { action: "GLOBAL_CONFIG_UPDATED" },
+      orderBy: { createdAt: "desc" }
+    });
+    const metadata = (latestConfig?.metadata || {}) as Partial<{ rewardXpCorrect: number; rewardCoinsCorrect: number }>;
+    return {
+      rewardXpCorrect: metadata.rewardXpCorrect && metadata.rewardXpCorrect > 0 ? metadata.rewardXpCorrect : 8,
+      rewardCoinsCorrect: metadata.rewardCoinsCorrect && metadata.rewardCoinsCorrect > 0 ? metadata.rewardCoinsCorrect : 5
+    };
+  }
+
   private dailyWordsByTrack(ageTrack: AgeTrack, settings: { defaultDailyNewWords10: number; defaultDailyNewWords13: number }) {
     return ageTrack === AgeTrack.AGE_10 ? settings.defaultDailyNewWords10 : settings.defaultDailyNewWords13;
   }
@@ -20,6 +32,9 @@ export class LearningService {
 
     if (!child || !child.household.settings) {
       throw new NotFoundException("Child profile or settings missing");
+    }
+    if (!child.isActive) {
+      throw new NotFoundException("Child profile is inactive");
     }
 
     const today = new Date();
@@ -36,13 +51,17 @@ export class LearningService {
 
     const plannedNewWords = this.dailyWordsByTrack(child.ageTrack, child.household.settings);
 
+    const reviewOrder = child.household.settings.reviewPriorityStrict
+      ? [{ state: "asc" as const }, { nextReviewAt: "asc" as const }, { wrongCount: "desc" as const }]
+      : [{ wrongCount: "desc" as const }, { nextReviewAt: "asc" as const }];
+
     const reviewRecords = await this.prisma.learningRecord.findMany({
       where: {
         childProfileId,
         nextReviewAt: { lte: new Date() },
         state: { in: [LearningState.LEARNING, LearningState.REVIEWING, LearningState.WEAK] }
       },
-      orderBy: [{ state: "asc" }, { nextReviewAt: "asc" }, { wrongCount: "desc" }],
+      orderBy: reviewOrder,
       take: plannedNewWords
     });
 
@@ -131,6 +150,7 @@ export class LearningService {
   }
 
   async submitWordResult(dto: SubmitWordResultDto) {
+    const reward = await this.getRewardConfig();
     let record = await this.prisma.learningRecord.findUnique({
       where: { childProfileId_wordId: { childProfileId: dto.childProfileId, wordId: dto.wordId } }
     });
@@ -138,10 +158,10 @@ export class LearningService {
     if (!record) {
       const child = await this.prisma.childProfile.findUnique({
         where: { id: dto.childProfileId },
-        select: { ageTrack: true }
+        select: { ageTrack: true, isActive: true }
       });
 
-      if (!child) {
+      if (!child || !child.isActive) {
         throw new NotFoundException("Child profile not found");
       }
 
@@ -185,8 +205,8 @@ export class LearningService {
     await this.prisma.worldProgress.updateMany({
       where: { childProfileId: dto.childProfileId },
       data: {
-        xp: { increment: dto.correct ? 8 : 2 },
-        coins: { increment: dto.correct ? 5 : 1 }
+        xp: { increment: dto.correct ? reward.rewardXpCorrect : 2 },
+        coins: { increment: dto.correct ? reward.rewardCoinsCorrect : 1 }
       }
     });
 

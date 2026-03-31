@@ -11,6 +11,7 @@ import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
 import { CreateWordDto } from "./dto/create-word.dto";
 import { UpdateWordDto } from "./dto/update-word.dto";
 import { BulkImportWordsDto } from "./dto/bulk-import-words.dto";
+import { UpdateChildActiveDto } from "./dto/update-child-active.dto";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -93,6 +94,20 @@ export class AdminController {
   @Get("users")
   users() {
     return this.adminService.listUsers();
+  }
+
+  @Get("children")
+  children() {
+    return this.adminService.listChildren();
+  }
+
+  @Patch("children/:childId/active")
+  updateChildActive(
+    @CurrentUser() user: { sub: string },
+    @Param("childId") childId: string,
+    @Body() dto: UpdateChildActiveDto
+  ) {
+    return this.adminService.updateChildActive(user.sub, childId, dto);
   }
 
   @Get("review-queue")

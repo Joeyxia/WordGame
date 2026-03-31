@@ -19,6 +19,21 @@ export class ParentController {
     return this.parentService.getDashboard(user.sub);
   }
 
+  @Post("notifications/sync")
+  syncNotifications(@CurrentUser() user: { sub: string }) {
+    return this.parentService.syncNotifications(user.sub);
+  }
+
+  @Get("notifications")
+  notifications(@CurrentUser() user: { sub: string }) {
+    return this.parentService.listNotifications(user.sub);
+  }
+
+  @Patch("notifications/:notificationId/read")
+  markNotificationRead(@CurrentUser() user: { sub: string }, @Param("notificationId") notificationId: string) {
+    return this.parentService.markNotificationRead(user.sub, notificationId);
+  }
+
   @Patch("settings/:householdId")
   updateSettings(
     @CurrentUser() user: { sub: string },

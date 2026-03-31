@@ -6,6 +6,7 @@ import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
 import { CreateWordDto } from "./dto/create-word.dto";
 import { UpdateWordDto } from "./dto/update-word.dto";
 import { BulkImportWordsDto } from "./dto/bulk-import-words.dto";
+import { UpdateChildActiveDto } from "./dto/update-child-active.dto";
 
 @Injectable()
 export class AdminService {
@@ -336,6 +337,24 @@ export class AdminService {
 
   listUsers() {
     return this.prisma.user.findMany({ orderBy: { createdAt: "desc" }, include: { households: true } });
+  }
+
+  listChildren() {
+    return this.prisma.childProfile.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        household: { select: { id: true, name: true, parent: { select: { email: true } } } }
+      }
+    });
+  }
+
+  async updateChildActive(actorId: string, childId: string, dto: UpdateChildActiveDto) {
+    const child = await this.prisma.childProfile.update({
+      where: { id: childId },
+      data: { isActive: dto.isActive }
+    });
+    await this.writeAudit(actorId, "CHILD_ACTIVE_UPDATED", "child_profile", childId, { isActive: dto.isActive });
+    return child;
   }
 
   listAuditLogs() {

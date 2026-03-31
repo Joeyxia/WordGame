@@ -42,7 +42,8 @@ export class ParentService {
             }
           }
         },
-        settings: true
+        settings: true,
+        notifications: { where: { read: false }, orderBy: { createdAt: "desc" }, take: 20 }
       }
     });
 
@@ -55,8 +56,92 @@ export class ParentService {
           (acc, child) => acc + child.learningRecords.filter((record) => record.state === "WEAK").length,
           0
         )
-      }))
+      })),
+      notifications: households.flatMap((h) =>
+        h.notifications.map((n) => ({ id: n.id, kind: n.kind, payload: n.payload, createdAt: n.createdAt, householdId: h.id }))
+      )
     };
+  }
+
+  async syncNotifications(parentId: string) {
+    const households = await this.prisma.household.findMany({
+      where: { parentId },
+      include: { childProfiles: true, notifications: { where: { read: false }, orderBy: { createdAt: "desc" }, take: 50 } }
+    });
+
+    const created: string[] = [];
+    for (const household of households) {
+      let dueReviews = 0;
+      let taskPending = 0;
+      for (const child of household.childProfiles) {
+        const nowDue = await this.prisma.learningRecord.count({
+          where: {
+            childProfileId: child.id,
+            OR: [{ state: LearningState.WEAK }, { nextReviewAt: { lte: new Date() }, state: { in: [LearningState.LEARNING, LearningState.REVIEWING] } }]
+          }
+        });
+        dueReviews += nowDue;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const task = await this.prisma.dailyTask.findUnique({
+          where: { childProfileId_taskDate: { childProfileId: child.id, taskDate: today } },
+          include: { taskItems: true }
+        });
+        if (task && task.taskItems.length > 0) {
+          const done = task.taskItems.filter((item) => item.completed).length;
+          if (done < task.taskItems.length) {
+            taskPending += 1;
+          }
+        }
+      }
+
+      const hasReviewAlert = household.notifications.some((n) => n.kind === "REVIEW_OVERDUE");
+      const hasTaskAlert = household.notifications.some((n) => n.kind === "DAILY_TASK_PENDING");
+
+      if (dueReviews >= 20 && !hasReviewAlert) {
+        const notice = await this.prisma.notification.create({
+          data: {
+            householdId: household.id,
+            kind: "REVIEW_OVERDUE",
+            payload: { dueReviews, message: "Review queue is heavy, please prioritize review today." }
+          }
+        });
+        created.push(notice.id);
+      }
+
+      if (taskPending > 0 && !hasTaskAlert) {
+        const notice = await this.prisma.notification.create({
+          data: {
+            householdId: household.id,
+            kind: "DAILY_TASK_PENDING",
+            payload: { taskPending, message: "Some child tasks are not completed today." }
+          }
+        });
+        created.push(notice.id);
+      }
+    }
+
+    return { createdCount: created.length, createdIds: created };
+  }
+
+  async listNotifications(parentId: string) {
+    const notifications = await this.prisma.notification.findMany({
+      where: { household: { parentId } },
+      orderBy: { createdAt: "desc" },
+      take: 120
+    });
+    return { notifications };
+  }
+
+  async markNotificationRead(parentId: string, notificationId: string) {
+    const target = await this.prisma.notification.findFirst({
+      where: { id: notificationId, household: { parentId } }
+    });
+    if (!target) {
+      throw new NotFoundException("Notification not found");
+    }
+    return this.prisma.notification.update({ where: { id: notificationId }, data: { read: true } });
   }
 
   async updateSettings(parentId: string, householdId: string, dto: UpdateParentSettingsDto) {
@@ -153,6 +238,7 @@ export class ParentService {
         srsStage: item.srsStage,
         wrongCount: item.wrongCount,
         nextReviewAt: item.nextReviewAt,
+        wordId: item.word.id,
         word: item.word.word,
         phonetic: item.word.phonetic,
         meaningEn: item.word.meaningEn
