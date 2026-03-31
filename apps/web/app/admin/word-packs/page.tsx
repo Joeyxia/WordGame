@@ -19,6 +19,22 @@ type Word = {
   difficultyLevel: number;
   themeCategory: string;
 };
+type QualityReport = {
+  summary: { totalWords: number; issueWords: number; healthyWords: number };
+  categoryStats: Record<string, number>;
+  issueSamples: { wordId: string; word: string; issues: string[] }[];
+};
+type ImportPreview = {
+  summary: {
+    totalInput: number;
+    uniqueInput: number;
+    duplicatesInPayload: number;
+    existingInDatabase: number;
+    invalidItems: number;
+    importableCount: number;
+  };
+  invalidItems: { index: number; word: string; issues: string[] }[];
+};
 
 const EMPTY_WORD = {
   word: "",
@@ -43,6 +59,9 @@ export default function AdminWordPacksPage() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState("");
+  const [bulkJson, setBulkJson] = useState("");
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [quality, setQuality] = useState<QualityReport | null>(null);
 
   const activePack = useMemo(() => packs.find((pack) => pack.id === activePackId) || null, [packs, activePackId]);
 
@@ -158,6 +177,73 @@ export default function AdminWordPacksPage() {
     }
   }
 
+  function parseBulkWords() {
+    const parsed = JSON.parse(bulkJson) as Record<string, unknown>[];
+    if (!Array.isArray(parsed)) {
+      throw new Error("Bulk JSON must be an array");
+    }
+    return parsed.map((row) => ({
+      word: String(row.word || ""),
+      phonetic: String(row.phonetic || ""),
+      meaningZh: String(row.meaningZh || row.meaning_zh || ""),
+      meaningEn: String(row.meaningEn || row.meaning_en || ""),
+      partOfSpeech: String(row.partOfSpeech || row.part_of_speech || "noun"),
+      exampleSentence: String(row.exampleSentence || row.example_sentence || ""),
+      exampleSentenceZh: String(row.exampleSentenceZh || row.example_sentence_zh || ""),
+      imageUrl: String(row.imageUrl || row.image_url || ""),
+      audioUrl: String(row.audioUrl || row.audio_url || ""),
+      difficultyLevel: Number(row.difficultyLevel || row.difficulty_level || 1),
+      themeCategory: String(row.themeCategory || row.theme_category || "general")
+    }));
+  }
+
+  async function runImportPreview() {
+    if (!activePackId) return;
+    setError("");
+    setStatus("Running import preview...");
+    try {
+      const wordsPayload = parseBulkWords();
+      const data = await apiPost<ImportPreview>(`/admin/word-packs/${activePackId}/import-preview`, { words: wordsPayload });
+      setPreview(data);
+      setStatus("Import preview ready.");
+    } catch (err) {
+      setError((err as Error).message);
+      setStatus("");
+    }
+  }
+
+  async function executeBulkImport() {
+    if (!activePackId) return;
+    setError("");
+    setStatus("Importing words...");
+    try {
+      const wordsPayload = parseBulkWords();
+      const result = await apiPost<{ ok: boolean; message: string }>(`/admin/word-packs/${activePackId}/import-words`, {
+        words: wordsPayload
+      });
+      setStatus(result.message);
+      await loadWords(activePackId);
+      await loadPacks();
+    } catch (err) {
+      setError((err as Error).message);
+      setStatus("");
+    }
+  }
+
+  async function loadQualityReport() {
+    if (!activePackId) return;
+    setError("");
+    setStatus("Checking pack quality...");
+    try {
+      const data = await apiGet<QualityReport>(`/admin/word-packs/${activePackId}/quality-report`);
+      setQuality(data);
+      setStatus("Quality report loaded.");
+    } catch (err) {
+      setError((err as Error).message);
+      setStatus("");
+    }
+  }
+
   return (
     <PageShell title="Word Packs" subtitle="Manage pack status and words by age/version.">
       {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
@@ -206,6 +292,54 @@ export default function AdminWordPacksPage() {
             Add Word To {activePack.name}
           </button>
         </form>
+      ) : null}
+
+      {activePack ? (
+        <section className="mc-list-card mb-3 grid gap-2 p-3 text-sm">
+          <p className="font-semibold">Bulk Import JSON</p>
+          <textarea
+            className="min-h-44 p-2 font-mono text-xs"
+            placeholder='Paste JSON array: [{"word":"apple","phonetic":"/.../","meaning_en":"...","meaning_zh":"..."}]'
+            value={bulkJson}
+            onChange={(event) => setBulkJson(event.target.value)}
+          />
+          <div className="flex gap-2">
+            <button className="mc-btn" onClick={() => void runImportPreview()}>
+              Preview Import
+            </button>
+            <button className="mc-btn" onClick={() => void executeBulkImport()}>
+              Import Words
+            </button>
+            <button className="mc-btn" onClick={() => void loadQualityReport()}>
+              Quality Report
+            </button>
+          </div>
+          {preview ? (
+            <div className="mc-list-card p-2">
+              <p className="font-semibold">
+                preview: total {preview.summary.totalInput}, unique {preview.summary.uniqueInput}, invalid {preview.summary.invalidItems},
+                importable {preview.summary.importableCount}
+              </p>
+              {preview.invalidItems.slice(0, 10).map((item) => (
+                <p key={`${item.index}-${item.word}`} className="text-xs text-red-700">
+                  #{item.index} {item.word || "(empty)"}: {item.issues.join(", ")}
+                </p>
+              ))}
+            </div>
+          ) : null}
+          {quality ? (
+            <div className="mc-list-card p-2">
+              <p className="font-semibold">
+                quality: total {quality.summary.totalWords}, healthy {quality.summary.healthyWords}, issue words {quality.summary.issueWords}
+              </p>
+              {quality.issueSamples.slice(0, 10).map((item) => (
+                <p key={item.wordId} className="text-xs text-red-700">
+                  {item.word}: {item.issues.join(", ")}
+                </p>
+              ))}
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       <div className="space-y-2">

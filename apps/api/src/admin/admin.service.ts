@@ -5,10 +5,27 @@ import { UpsertAssetDto } from "./dto/upsert-asset.dto";
 import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
 import { CreateWordDto } from "./dto/create-word.dto";
 import { UpdateWordDto } from "./dto/update-word.dto";
+import { BulkImportWordsDto } from "./dto/bulk-import-words.dto";
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private validateWordPayload(word: CreateWordDto) {
+    const issues: string[] = [];
+    if (!word.word?.trim()) issues.push("word missing");
+    if (!word.phonetic?.trim()) issues.push("phonetic missing");
+    if (!word.meaningEn?.trim()) issues.push("meaningEn missing");
+    if (!word.meaningZh?.trim()) issues.push("meaningZh missing");
+    if (!word.exampleSentence?.trim()) issues.push("exampleSentence missing");
+    if (!word.exampleSentenceZh?.trim()) issues.push("exampleSentenceZh missing");
+    if (!word.imageUrl?.startsWith("http")) issues.push("imageUrl invalid");
+    if (!word.audioUrl?.startsWith("http")) issues.push("audioUrl invalid");
+    if (!word.themeCategory?.trim()) issues.push("themeCategory missing");
+    if (!word.partOfSpeech?.trim()) issues.push("partOfSpeech missing");
+    if (word.difficultyLevel < 1 || word.difficultyLevel > 5) issues.push("difficultyLevel out of range");
+    return issues;
+  }
 
   getDashboard() {
     return Promise.all([
@@ -53,6 +70,154 @@ export class AdminService {
         status: pack.status
       },
       words: pack.items.map((item) => item.word)
+    };
+  }
+
+  async previewImportWords(packId: string, dto: BulkImportWordsDto) {
+    const pack = await this.prisma.wordPack.findUnique({ where: { id: packId } });
+    if (!pack) {
+      throw new Error("Word pack not found");
+    }
+
+    const normalizedWords = dto.words.map((item) => item.word.trim().toLowerCase());
+    const duplicatesInPayload = normalizedWords.filter((word, index) => normalizedWords.indexOf(word) !== index);
+    const uniquePayloadWords = [...new Set(normalizedWords)];
+    const existingWords = await this.prisma.word.findMany({
+      where: { ageTrack: pack.ageTrack, word: { in: uniquePayloadWords } },
+      select: { word: true }
+    });
+    const existingSet = new Set(existingWords.map((item) => item.word));
+
+    const invalidItems = dto.words
+      .map((item, index) => {
+        const issues = this.validateWordPayload(item);
+        return {
+          index,
+          word: item.word,
+          issues
+        };
+      })
+      .filter((item) => item.issues.length > 0);
+
+    return {
+      pack: { id: pack.id, name: pack.name, ageTrack: pack.ageTrack },
+      summary: {
+        totalInput: dto.words.length,
+        uniqueInput: uniquePayloadWords.length,
+        duplicatesInPayload: [...new Set(duplicatesInPayload)].length,
+        existingInDatabase: [...existingSet].length,
+        invalidItems: invalidItems.length,
+        importableCount: dto.words.length - invalidItems.length
+      },
+      invalidItems: invalidItems.slice(0, 100),
+      existingWords: [...existingSet].slice(0, 200)
+    };
+  }
+
+  async importWords(actorId: string, packId: string, dto: BulkImportWordsDto) {
+    const preview = await this.previewImportWords(packId, dto);
+    if (preview.summary.invalidItems > 0) {
+      return {
+        ok: false,
+        message: "Import blocked: invalid items found. Fix preview errors first.",
+        preview
+      };
+    }
+
+    const pack = await this.prisma.wordPack.findUnique({ where: { id: packId } });
+    if (!pack) {
+      throw new Error("Word pack not found");
+    }
+
+    const uniqueByWord = new Map<string, CreateWordDto>();
+    for (const item of dto.words) {
+      uniqueByWord.set(item.word.trim().toLowerCase(), item);
+    }
+
+    let createdOrUpdated = 0;
+    for (const [normalized, item] of uniqueByWord.entries()) {
+      const word = await this.prisma.word.upsert({
+        where: { word_ageTrack: { word: normalized, ageTrack: pack.ageTrack } },
+        update: {
+          phonetic: item.phonetic,
+          meaningZh: item.meaningZh,
+          meaningEn: item.meaningEn,
+          partOfSpeech: item.partOfSpeech,
+          exampleSentence: item.exampleSentence,
+          exampleSentenceZh: item.exampleSentenceZh,
+          imageUrl: item.imageUrl,
+          audioUrl: item.audioUrl,
+          difficultyLevel: item.difficultyLevel,
+          themeCategory: item.themeCategory
+        },
+        create: {
+          word: normalized,
+          ageTrack: pack.ageTrack,
+          phonetic: item.phonetic,
+          meaningZh: item.meaningZh,
+          meaningEn: item.meaningEn,
+          partOfSpeech: item.partOfSpeech,
+          exampleSentence: item.exampleSentence,
+          exampleSentenceZh: item.exampleSentenceZh,
+          imageUrl: item.imageUrl,
+          audioUrl: item.audioUrl,
+          difficultyLevel: item.difficultyLevel,
+          themeCategory: item.themeCategory
+        }
+      });
+      await this.prisma.wordPackItem.upsert({
+        where: { wordPackId_wordId: { wordPackId: pack.id, wordId: word.id } },
+        update: {},
+        create: { wordPackId: pack.id, wordId: word.id }
+      });
+      createdOrUpdated += 1;
+    }
+
+    await this.writeAudit(actorId, "WORD_BULK_IMPORTED", "word_pack", packId, {
+      totalInput: dto.words.length,
+      uniqueImported: createdOrUpdated
+    });
+
+    return {
+      ok: true,
+      message: `Imported ${createdOrUpdated} unique words into ${pack.name}.`,
+      importedCount: createdOrUpdated
+    };
+  }
+
+  async getPackQualityReport(packId: string) {
+    const data = await this.listWordsInPack(packId);
+    const words = data.words || [];
+    const issues: { wordId: string; word: string; issues: string[] }[] = [];
+
+    for (const item of words) {
+      const check: string[] = [];
+      if (!item.meaningEn?.trim()) check.push("missing meaningEn");
+      if (!item.meaningZh?.trim()) check.push("missing meaningZh");
+      if (!item.imageUrl?.startsWith("http")) check.push("invalid imageUrl");
+      if (!item.audioUrl?.startsWith("http")) check.push("invalid audioUrl");
+      if ((item.exampleSentence || "").trim().length < 4) check.push("exampleSentence too short");
+      if ((item.exampleSentenceZh || "").trim().length < 4) check.push("exampleSentenceZh too short");
+      if (item.difficultyLevel < 1 || item.difficultyLevel > 5) check.push("difficultyLevel out of range");
+      if (check.length) {
+        issues.push({ wordId: item.id, word: item.word, issues: check });
+      }
+    }
+
+    const categoryStats = words.reduce<Record<string, number>>((acc, item) => {
+      acc[item.themeCategory] = (acc[item.themeCategory] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      pack: data.pack,
+      summary: {
+        totalWords: words.length,
+        issueWords: issues.length,
+        healthyWords: words.length - issues.length
+      },
+      categoryStats,
+      issueSamples: issues.slice(0, 120)
     };
   }
 

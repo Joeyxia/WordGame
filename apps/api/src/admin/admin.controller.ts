@@ -10,6 +10,7 @@ import { UpsertAssetDto } from "./dto/upsert-asset.dto";
 import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
 import { CreateWordDto } from "./dto/create-word.dto";
 import { UpdateWordDto } from "./dto/update-word.dto";
+import { BulkImportWordsDto } from "./dto/bulk-import-words.dto";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,6 +49,25 @@ export class AdminController {
     @Body() dto: CreateWordDto
   ) {
     return this.adminService.createWordInPack(user.sub, packId, dto);
+  }
+
+  @Post("word-packs/:packId/import-preview")
+  importPreview(@Param("packId") packId: string, @Body() dto: BulkImportWordsDto) {
+    return this.adminService.previewImportWords(packId, dto);
+  }
+
+  @Post("word-packs/:packId/import-words")
+  importWords(
+    @CurrentUser() user: { sub: string },
+    @Param("packId") packId: string,
+    @Body() dto: BulkImportWordsDto
+  ) {
+    return this.adminService.importWords(user.sub, packId, dto);
+  }
+
+  @Get("word-packs/:packId/quality-report")
+  qualityReport(@Param("packId") packId: string) {
+    return this.adminService.getPackQualityReport(packId);
   }
 
   @Patch("words/:wordId")
