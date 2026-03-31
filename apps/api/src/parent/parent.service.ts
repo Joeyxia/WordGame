@@ -271,4 +271,24 @@ export class ParentService {
       };
     });
   }
+
+  async getReportsExport(parentId: string) {
+    const reports = await this.getReports(parentId);
+    const headers = ["childProfileId", "childName", "mastered", "weak", "total", "completionRate30d"];
+    const rows = reports.map((item) =>
+      [
+        item.childProfileId,
+        `"${item.childName.replaceAll('"', '""')}"`,
+        String(item.mastered),
+        String(item.weak),
+        String(item.total),
+        String(item.completionRate30d)
+      ].join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    return {
+      filename: `wordquest-parent-reports-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv
+    };
+  }
 }

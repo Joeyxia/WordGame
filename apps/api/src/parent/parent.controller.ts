@@ -56,4 +56,9 @@ export class ParentController {
   reports(@CurrentUser() user: { sub: string }) {
     return this.parentService.getReports(user.sub);
   }
+
+  @Get("reports-export")
+  reportsExport(@CurrentUser() user: { sub: string }) {
+    return this.parentService.getReportsExport(user.sub);
+  }
 }
