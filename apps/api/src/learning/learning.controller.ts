@@ -5,6 +5,7 @@ import { RolesGuard } from "../common/roles.guard";
 import { Roles } from "../common/roles.decorator";
 import { LearningService } from "./learning.service";
 import { SubmitWordResultDto } from "./dto-submit-word-result";
+import { CompleteChallengeDto } from "./dto-complete-challenge";
 
 @Controller("learning")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,5 +28,17 @@ export class LearningController {
   @Roles(Role.PARENT, Role.CHILD, Role.ADMIN)
   submit(@Body() dto: SubmitWordResultDto) {
     return this.learningService.submitWordResult(dto);
+  }
+
+  @Get("challenge/:childProfileId")
+  @Roles(Role.PARENT, Role.CHILD, Role.ADMIN)
+  getChallenges(@Param("childProfileId") childProfileId: string) {
+    return this.learningService.getChallenges(childProfileId);
+  }
+
+  @Post("challenge/:childProfileId/complete")
+  @Roles(Role.PARENT, Role.CHILD, Role.ADMIN)
+  completeChallenge(@Param("childProfileId") childProfileId: string, @Body() dto: CompleteChallengeDto) {
+    return this.learningService.completeChallenge(childProfileId, dto.challengeId);
   }
 }
