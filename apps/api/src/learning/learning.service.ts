@@ -131,12 +131,32 @@ export class LearningService {
   }
 
   async submitWordResult(dto: SubmitWordResultDto) {
-    const record = await this.prisma.learningRecord.findUnique({
+    let record = await this.prisma.learningRecord.findUnique({
       where: { childProfileId_wordId: { childProfileId: dto.childProfileId, wordId: dto.wordId } }
     });
 
     if (!record) {
-      throw new NotFoundException("Learning record not found");
+      const child = await this.prisma.childProfile.findUnique({
+        where: { id: dto.childProfileId },
+        select: { ageTrack: true }
+      });
+
+      if (!child) {
+        throw new NotFoundException("Child profile not found");
+      }
+
+      record = await this.prisma.learningRecord.create({
+        data: {
+          childProfileId: dto.childProfileId,
+          wordId: dto.wordId,
+          ageTrack: child.ageTrack,
+          contentVersion: "v1",
+          sourcePackId: child.ageTrack === AgeTrack.AGE_10 ? "age10-core-v1" : "age13-core-v1",
+          state: LearningState.NEW,
+          srsStage: 0,
+          nextReviewAt: nextReviewAt(new Date(), 0)
+        }
+      });
     }
 
     const nextStage = dto.correct ? Math.min(record.srsStage + 1, 5) : Math.max(record.srsStage - 1, 0);

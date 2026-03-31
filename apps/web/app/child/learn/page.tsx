@@ -11,6 +11,7 @@ type Word = {
   word: string;
   phonetic: string;
   meaningZh: string;
+  meaningEn: string;
   exampleSentence: string;
 };
 
@@ -30,6 +31,8 @@ type TaskPayload = {
 export default function ChildLearnPage() {
   const [task, setTask] = useState<TaskPayload | null>(null);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [pendingItemId, setPendingItemId] = useState("");
   const router = useRouter();
   const childId = getSelectedChild();
 
@@ -58,14 +61,26 @@ export default function ChildLearnPage() {
 
   async function mark(item: TaskItem, correct: boolean) {
     if (!childId) return;
-    await apiPost("/learning/submit", { childProfileId: childId, wordId: item.word.id, correct });
-    const refreshed = await apiGet<TaskPayload>(`/learning/task/${childId}`);
-    setTask(refreshed);
+    setError("");
+    setInfo(correct ? `Saving "${item.word.word}" as correct...` : `Saving "${item.word.word}" as wrong...`);
+    setPendingItemId(item.id);
+    try {
+      await apiPost("/learning/submit", { childProfileId: childId, wordId: item.word.id, correct });
+      const refreshed = await apiGet<TaskPayload>(`/learning/task/${childId}`);
+      setTask(refreshed);
+      setInfo(correct ? `Saved "${item.word.word}" as correct.` : `Saved "${item.word.word}" as wrong.`);
+    } catch (err) {
+      setError((err as Error).message);
+      setInfo("");
+    } finally {
+      setPendingItemId("");
+    }
   }
 
   return (
     <PageShell title="Learning Quest" subtitle="4 groups × 5 words, each group followed by interaction stage.">
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
+      {info ? <p className="mb-3 text-sm text-emerald-700">{info}</p> : null}
       <div className="flex flex-col gap-4">
         {grouped.map((group, idx) => (
           <article key={idx} className="mc-list-card p-4">
@@ -77,14 +92,14 @@ export default function ChildLearnPage() {
                     <div>
                       <p className="font-semibold">{item.word.word}</p>
                       <p className="mc-soft text-xs">{item.word.phonetic}</p>
-                      <p className="text-sm">{item.word.meaningZh}</p>
+                      <p className="text-sm">{item.word.meaningEn || item.word.meaningZh}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button className="mc-btn" onClick={() => mark(item, true)}>
-                        Correct
+                      <button className="mc-btn" onClick={() => mark(item, true)} disabled={pendingItemId === item.id}>
+                        {pendingItemId === item.id ? "Saving..." : "Correct"}
                       </button>
-                      <button className="mc-btn" onClick={() => mark(item, false)}>
-                        Wrong
+                      <button className="mc-btn" onClick={() => mark(item, false)} disabled={pendingItemId === item.id}>
+                        {pendingItemId === item.id ? "Saving..." : "Wrong"}
                       </button>
                     </div>
                   </div>
