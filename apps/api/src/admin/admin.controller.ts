@@ -8,6 +8,8 @@ import { CurrentUser } from "../common/current-user.decorator";
 import { UpdateWordPackStatusDto } from "./dto/update-word-pack-status.dto";
 import { UpsertAssetDto } from "./dto/upsert-asset.dto";
 import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
+import { CreateWordDto } from "./dto/create-word.dto";
+import { UpdateWordDto } from "./dto/update-word.dto";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,6 +34,25 @@ export class AdminController {
     @Body() dto: UpdateWordPackStatusDto
   ) {
     return this.adminService.updateWordPackStatus(user.sub, packId, dto);
+  }
+
+  @Get("word-packs/:packId/words")
+  wordsInPack(@Param("packId") packId: string) {
+    return this.adminService.listWordsInPack(packId);
+  }
+
+  @Post("word-packs/:packId/words")
+  createWordInPack(
+    @CurrentUser() user: { sub: string },
+    @Param("packId") packId: string,
+    @Body() dto: CreateWordDto
+  ) {
+    return this.adminService.createWordInPack(user.sub, packId, dto);
+  }
+
+  @Patch("words/:wordId")
+  updateWord(@CurrentUser() user: { sub: string }, @Param("wordId") wordId: string, @Body() dto: UpdateWordDto) {
+    return this.adminService.updateWord(user.sub, wordId, dto);
   }
 
   @Get("assets")

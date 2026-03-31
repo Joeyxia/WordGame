@@ -3,6 +3,8 @@ import { PrismaService } from "../database/prisma.service";
 import { UpdateWordPackStatusDto } from "./dto/update-word-pack-status.dto";
 import { UpsertAssetDto } from "./dto/upsert-asset.dto";
 import { UpdateGlobalConfigDto } from "./dto/update-global-config.dto";
+import { CreateWordDto } from "./dto/create-word.dto";
+import { UpdateWordDto } from "./dto/update-word.dto";
 
 @Injectable()
 export class AdminService {
@@ -27,6 +29,110 @@ export class AdminService {
       data: { status: dto.status }
     });
     await this.writeAudit(actorId, "WORD_PACK_STATUS_UPDATED", "word_pack", packId, { status: dto.status });
+    return updated;
+  }
+
+  async listWordsInPack(packId: string) {
+    const pack = await this.prisma.wordPack.findUnique({
+      where: { id: packId },
+      include: {
+        items: {
+          include: { word: true },
+          orderBy: { word: { word: "asc" } }
+        }
+      }
+    });
+    if (!pack) {
+      return { pack: null, words: [] };
+    }
+    return {
+      pack: {
+        id: pack.id,
+        name: pack.name,
+        ageTrack: pack.ageTrack,
+        status: pack.status
+      },
+      words: pack.items.map((item) => item.word)
+    };
+  }
+
+  async createWordInPack(actorId: string, packId: string, dto: CreateWordDto) {
+    const pack = await this.prisma.wordPack.findUnique({ where: { id: packId } });
+    if (!pack) {
+      throw new Error("Word pack not found");
+    }
+    const normalized = dto.word.trim().toLowerCase();
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const word = await tx.word.upsert({
+        where: {
+          word_ageTrack: {
+            word: normalized,
+            ageTrack: pack.ageTrack
+          }
+        },
+        update: {
+          phonetic: dto.phonetic,
+          meaningZh: dto.meaningZh,
+          meaningEn: dto.meaningEn,
+          partOfSpeech: dto.partOfSpeech,
+          exampleSentence: dto.exampleSentence,
+          exampleSentenceZh: dto.exampleSentenceZh,
+          imageUrl: dto.imageUrl,
+          audioUrl: dto.audioUrl,
+          difficultyLevel: dto.difficultyLevel,
+          themeCategory: dto.themeCategory
+        },
+        create: {
+          word: normalized,
+          ageTrack: pack.ageTrack,
+          phonetic: dto.phonetic,
+          meaningZh: dto.meaningZh,
+          meaningEn: dto.meaningEn,
+          partOfSpeech: dto.partOfSpeech,
+          exampleSentence: dto.exampleSentence,
+          exampleSentenceZh: dto.exampleSentenceZh,
+          imageUrl: dto.imageUrl,
+          audioUrl: dto.audioUrl,
+          difficultyLevel: dto.difficultyLevel,
+          themeCategory: dto.themeCategory
+        }
+      });
+
+      await tx.wordPackItem.upsert({
+        where: { wordPackId_wordId: { wordPackId: pack.id, wordId: word.id } },
+        update: {},
+        create: { wordPackId: pack.id, wordId: word.id }
+      });
+      return word;
+    });
+
+    await this.writeAudit(actorId, "WORD_CREATED_IN_PACK", "word_pack", packId, {
+      wordId: created.id,
+      word: created.word
+    });
+    return created;
+  }
+
+  async updateWord(actorId: string, wordId: string, dto: UpdateWordDto) {
+    const nextWord = dto.word?.trim().toLowerCase();
+    const updated = await this.prisma.word.update({
+      where: { id: wordId },
+      data: {
+        ...(nextWord ? { word: nextWord } : {}),
+        ...(dto.phonetic !== undefined ? { phonetic: dto.phonetic } : {}),
+        ...(dto.meaningZh !== undefined ? { meaningZh: dto.meaningZh } : {}),
+        ...(dto.meaningEn !== undefined ? { meaningEn: dto.meaningEn } : {}),
+        ...(dto.partOfSpeech !== undefined ? { partOfSpeech: dto.partOfSpeech } : {}),
+        ...(dto.exampleSentence !== undefined ? { exampleSentence: dto.exampleSentence } : {}),
+        ...(dto.exampleSentenceZh !== undefined ? { exampleSentenceZh: dto.exampleSentenceZh } : {}),
+        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+        ...(dto.audioUrl !== undefined ? { audioUrl: dto.audioUrl } : {}),
+        ...(dto.difficultyLevel !== undefined ? { difficultyLevel: dto.difficultyLevel } : {}),
+        ...(dto.themeCategory !== undefined ? { themeCategory: dto.themeCategory } : {})
+      }
+    });
+    await this.writeAudit(actorId, "WORD_UPDATED", "word", wordId, dto);
     return updated;
   }
 
