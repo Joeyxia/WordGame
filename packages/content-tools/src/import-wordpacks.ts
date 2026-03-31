@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const prisma = new PrismaClient();
 
@@ -22,9 +23,18 @@ type WordItem = {
 };
 
 async function run() {
+  const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../../");
   const packs = [
-    { slug: "age10-core-v1", path: resolve("content/wordpacks/age10/base.json"), ageTrack: "AGE_10" as const },
-    { slug: "age13-core-v1", path: resolve("content/wordpacks/age13/base.json"), ageTrack: "AGE_13" as const }
+    {
+      slug: "age10-core-v1",
+      path: resolve(rootDir, "content/wordpacks/age10/base.json"),
+      ageTrack: "AGE_10" as const
+    },
+    {
+      slug: "age13-core-v1",
+      path: resolve(rootDir, "content/wordpacks/age13/base.json"),
+      ageTrack: "AGE_13" as const
+    }
   ];
 
   for (const pack of packs) {
