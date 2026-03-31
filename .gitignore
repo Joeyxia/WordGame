@@ -12,6 +12,7 @@ pnpm-debug.log*
 node_modules/
 dist/
 build/
+!apps/web/app/child/build/
 coverage/
 .next/
 

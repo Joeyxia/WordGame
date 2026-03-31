@@ -6,6 +6,11 @@ import { apiGet } from "../../../lib/api";
 import { PageShell } from "../../../components/page-shell";
 
 type DashboardResponse = {
+  households: {
+    id: string;
+    name: string;
+    childProfiles: { id: string; name: string; ageTrack: "AGE_10" | "AGE_13" }[];
+  }[];
   summary: { householdId: string; childCount: number; weakWords: number }[];
 };
 
@@ -23,16 +28,23 @@ export default function ParentDashboardPage() {
     <PageShell title="Parent Dashboard" subtitle="Track completion, weak words and review pressure.">
       {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
       <div className="space-y-2">
-        {data?.summary.map((item) => (
+        {data?.summary.map((item) => {
+          const household = data.households.find((h) => h.id === item.householdId);
+          return (
           <article key={item.householdId} className="mc-list-card p-3">
-            <p>Household: {item.householdId}</p>
+            <p>Household: {household?.name ?? item.householdId}</p>
             <p>Children: {item.childCount}</p>
             <p>Weak words: {item.weakWords}</p>
-            <Link href={`/parent/child/${item.householdId}`} className="mc-btn mt-2 inline-block">
-              View Child Detail
-            </Link>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(household?.childProfiles || []).map((child) => (
+                <Link key={child.id} href={`/parent/child/${child.id}`} className="mc-btn inline-block">
+                  {child.name} Detail
+                </Link>
+              ))}
+            </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </PageShell>
   );

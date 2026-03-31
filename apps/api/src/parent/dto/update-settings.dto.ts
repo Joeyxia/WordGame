@@ -42,4 +42,8 @@ export class UpdateParentSettingsDto {
   @IsOptional()
   @IsBoolean()
   enableChallenge?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  reviewPriorityStrict?: boolean;
 }

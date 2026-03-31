@@ -19,6 +19,12 @@ export default function ChildHomePage() {
         <Link href="/child/build" className="world-tile p-3 font-semibold text-white">
           Build & Repair
         </Link>
+        <Link href="/child/review" className="world-tile p-3 font-semibold text-white">
+          Review Queue
+        </Link>
+        <Link href="/child/rewards" className="world-tile p-3 font-semibold text-white">
+          Rewards & Progress
+        </Link>
       </div>
     </PageShell>
   );
